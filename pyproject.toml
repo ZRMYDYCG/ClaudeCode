@@ -7,10 +7,15 @@ authors = [
     { name = "Zr", email = "547471919@qq.com" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "prompt-toolkit>=3.0.53",
+    "pydantic-ai>=2.40.0",
+    "python-dotenv>=1.2.3",
+    "rich>=15.0.0",
+]
 
 [project.scripts]
-claude-code = "claude_code:main"
+claude-code = "main:main"
 
 [dependency-groups]
 dev = [
@@ -23,18 +28,27 @@ dev = [
 requires = ["uv_build>=0.12.10,<0.13.0"]
 build-backend = "uv_build"
 
+[tool.uv.build-backend]
+module-root = ""
+module-name = "core"
+
 [tool.ruff]
 target-version = "py314"
 line-length = 100
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["."]
 
 [tool.mypy]
 python_version = "3.14"
 strict = true
-packages = ["claude_code"]
+packages = ["core"]

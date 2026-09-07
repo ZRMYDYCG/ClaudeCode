@@ -21,10 +21,13 @@ uv run claude-code
 uv add requests
 uv add --dev pytest
 
-# 测试 / 检查
+# 格式化 / Lint（类似前端 Prettier + ESLint，一把梭用 ruff）
+uv run ruff format .
+uv run ruff check --fix .
+
+# 测试 / 类型检查
 uv run pytest
-uv run ruff check .
-uv run mypy src
+uv run mypy core
 ```
 
 ## 版本管理
