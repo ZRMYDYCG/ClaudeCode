@@ -1,39 +1,59 @@
-# Claude Code
+# Zrcoder
 
-macOS Python workspace（uv + CPython 3.14）。
+终端里的编程助手：连 OpenAI 兼容 API，可读写文件、执行命令，并支持 `/help` 等斜杠命令。
 
-## 环境要求
+## 安装
 
-- `uv`（已安装到 `~/.local/bin`）
-- Python `3.14`（由 uv 管理，勿用系统 `/usr/bin/python3`）
-
-## 常用命令
+需要 Python **3.12+**。推荐用 [uv](https://docs.astral.sh/uv/)：
 
 ```bash
-# 同步依赖并创建 .venv
-uv sync
+uv tool install zrcoder
+```
 
-# 运行
+也可用 pipx / pip：
+
+```bash
+pipx install zrcoder
+# 或
+pip install zrcoder
+```
+
+## 配置
+
+在环境变量或项目目录的 `.env` 中设置（可参考 `.env.example`）：
+
+```bash
+export API_KEY=your_api_key
+export BASE_URL=https://api.example.com/v1
+# 可选，默认 deepseek-v4-flash
+# export MODEL_NAME=deepseek-v4-flash
+```
+
+## 使用
+
+```bash
+zrcoder
+```
+
+常用命令：`/help`、`/status`、`/new`、`/api-detail`、`/exit`。
+
+## 从源码开发
+
+```bash
+git clone https://github.com/ZRMYDYCG/ClaudeCode.git
+cd ClaudeCode
+uv sync --group dev
+
+uv run zrcoder
+# 或
 uv run python main.py
-uv run claude-code
 
-# 添加依赖
-uv add requests
-uv add --dev pytest
-
-# 格式化 / Lint（类似前端 Prettier + ESLint，一把梭用 ruff）
 uv run ruff format .
 uv run ruff check --fix .
-
-# 测试 / 类型检查
 uv run pytest
 uv run mypy core
 ```
 
-## 版本管理
+## License
 
-```bash
-uv python list          # 查看已安装 / 可下载版本
-uv python install 3.13  # 安装其他版本
-uv python pin 3.14      # 固定本项目版本（写入 .python-version）
-```
+MIT

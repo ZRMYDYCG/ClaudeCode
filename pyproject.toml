@@ -1,21 +1,39 @@
 [project]
-name = "claude-code"
+name = "zrcoder"
 version = "0.1.0"
-description = "Claude Code workspace"
+description = "Terminal coding agent chat — OpenAI-compatible APIs, tools, and slash commands"
 readme = "README.md"
+license = "MIT"
 authors = [
     { name = "Zr", email = "547471919@qq.com" }
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
     "prompt-toolkit>=3.0.53",
     "pydantic-ai>=2.40.0",
     "python-dotenv>=1.2.3",
     "rich>=15.0.0",
 ]
+keywords = ["cli", "agent", "coding", "terminal", "openai"]
+license-files = ["LICENSE"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development",
+]
+
+[project.urls]
+Homepage = "https://github.com/ZRMYDYCG/ClaudeCode"
+Repository = "https://github.com/ZRMYDYCG/ClaudeCode"
+Issues = "https://github.com/ZRMYDYCG/ClaudeCode/issues"
 
 [project.scripts]
-claude-code = "main:main"
+zrcoder = "core.cli:main"
 
 [dependency-groups]
 dev = [
@@ -33,7 +51,7 @@ module-root = ""
 module-name = "core"
 
 [tool.ruff]
-target-version = "py314"
+target-version = "py312"
 line-length = 100
 
 [tool.ruff.format]
@@ -49,6 +67,6 @@ testpaths = ["tests"]
 pythonpath = ["."]
 
 [tool.mypy]
-python_version = "3.14"
+python_version = "3.12"
 strict = true
 packages = ["core"]
