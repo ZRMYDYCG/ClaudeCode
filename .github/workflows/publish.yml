@@ -73,7 +73,18 @@ jobs:
         env:
           # 若已配置 Trusted Publishing，可不设 secret；否则在仓库 Secrets 加 UV_PUBLISH_TOKEN
           UV_PUBLISH_TOKEN: ${{ secrets.UV_PUBLISH_TOKEN }}
-        run: >
-          uv publish
-          --trusted-publishing automatic
-          --check-url https://pypi.org/simple/zrcoder/
+        run: |
+          version="$(
+            python3 - <<'PY'
+          import tomllib
+          from pathlib import Path
+          print(tomllib.loads(Path("pyproject.toml").read_text())["project"]["version"])
+          PY
+          )"
+          if curl -sf "https://pypi.org/pypi/zrcoder/${version}/json" >/dev/null; then
+            echo "zrcoder==${version} 已在 PyPI，跳过上传。"
+            exit 0
+          fi
+          uv publish \
+            --trusted-publishing automatic \
+            --check-url https://pypi.org/simple/zrcoder/
