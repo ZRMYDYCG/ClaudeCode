@@ -1,0 +1,72 @@
+name: Update project structure
+
+on:
+  schedule:
+    # 每天 00:00 Asia/Shanghai (UTC+8) = 16:00 UTC
+    - cron: "0 16 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: update-project-structure
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Generate STRUCTURE.md
+        run: >
+          npx --yes md-structure generate
+          --no-only
+          --output STRUCTURE.md
+          --exclude .git,.venv,venv,node_modules,dist,build,__pycache__,.pytest_cache,.mypy_cache,.ruff_cache,.tox,.nox,.codegraph,.eggs,.idea,.vscode,htmlcov
+
+      # md-structure writes an absolute root path; normalize so CI/local diffs stay stable
+      - name: Normalize STRUCTURE.md
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("STRUCTURE.md")
+          root = Path(".").resolve().name
+          skip_names = {".env"}
+          lines = []
+          for i, line in enumerate(path.read_text(encoding="utf-8").splitlines()):
+              if i == 0:
+                  lines.append(f"├── {root}")
+                  continue
+              if any(line.rstrip().endswith(name) for name in skip_names):
+                  continue
+              lines.append(line)
+          path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
+
+      - name: Create or update Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "docs: update STRUCTURE.md"
+          branch: chore/update-project-structure
+          delete-branch: true
+          title: "docs: daily STRUCTURE.md update"
+          body: |
+            ## Summary
+            - Regenerates root `STRUCTURE.md` via [`md-structure`](https://www.npmjs.com/package/md-structure)
+            - Scheduled daily (also runnable via **Actions → Update project structure → Run workflow**)
+
+            ## Notes
+            - No-op if the tree is unchanged (no PR / no new commit)
+          labels: |
+            documentation
+            automated
