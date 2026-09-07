@@ -1,0 +1,55 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# uv / packaging
+dist/
+build/
+*.egg-info/
+.eggs/
+*.egg
+
+# Test / coverage / typecheck
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+*.pem
+credentials.json
+secrets/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Logs / local
+*.log
+logs/
+tmp/
+temp/
