@@ -23,10 +23,10 @@ class ApiCall:
     messages_count: int
     # 这次发送给模型的 messages 中最后一条消息的最后一个 part
     last_part: Any
-    tools: list
+    tools: list[str]
     # response 侧（after hook 填充）
     finish_reason: str = ""
-    parts_kinds: list = field(default_factory=list)
+    parts_kinds: list[str] = field(default_factory=list)
     input_tokens: int = 0
     output_tokens: int = 0
 
@@ -38,7 +38,7 @@ hooks = Hooks()
 
 
 @hooks.on.before_model_request
-async def _record_request(ctx, request_context):
+async def _record_request(ctx: Any, request_context: Any) -> Any:
     """
     每次发起 model 调用之前，创建一条 ApiCall 记录。
     """
@@ -60,7 +60,7 @@ async def _record_request(ctx, request_context):
 
 
 @hooks.on.after_model_request
-async def _record_response(ctx, request_context, response):
+async def _record_response(ctx: Any, request_context: Any, response: Any) -> Any:
     """
     每次 model 调用返回后，填充上面这条 ApiCall 的 response 字段。
     """

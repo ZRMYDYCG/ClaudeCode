@@ -3,6 +3,7 @@ Agent 实例化：把 model / instructions / tools / hooks 拼起来。
 """
 
 import os
+from typing import Any, cast
 from urllib.parse import urlparse, urlunparse
 
 from dotenv import load_dotenv
@@ -52,6 +53,6 @@ agent = Agent(
         "工作流程：先理解需求，写代码，然后运行验证。"
         "如果有错误就修复并重新运行，直到确认正确。"
     ),
-    tools=TOOLS,
+    tools=cast(Any, TOOLS),
     capabilities=[hooks],
 )

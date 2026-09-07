@@ -6,6 +6,13 @@
         "command": ".cursor/hooks/format.sh",
         "timeout": 30
       }
+    ],
+    "stop": [
+      {
+        "command": ".cursor/hooks/verify.sh",
+        "timeout": 120,
+        "loop_limit": 3
+      }
     ]
   }
 }

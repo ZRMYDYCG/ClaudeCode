@@ -1,6 +1,8 @@
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
+from typing import Any
 
+from rich.console import Console, ConsoleOptions, RenderResult
 from rich.markdown import Heading, Markdown
 from rich.markup import escape
 from rich.padding import Padding
@@ -14,7 +16,7 @@ class LeftAlignedHeading(Heading):
     rich 默认把 Markdown 标题渲染成居中对齐，宽终端里看着像错位，覆盖成左对齐。
     """
 
-    def __rich_console__(self, console, options):
+    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
         text = self.text
         text.justify = "left"
         yield text
@@ -30,12 +32,12 @@ class SessionState:
     跨命令共享的会话状态，主循环把它传给每个命令处理函数。
     """
 
-    history: list = field(default_factory=list)
+    history: list[Any] = field(default_factory=list)
     input_tokens: int = 0
     output_tokens: int = 0
     model_name: str = ""
     # 最近一轮 user input 触发的所有 model API 调用记录
-    last_api_calls: list = field(default_factory=list)
+    last_api_calls: list[Any] = field(default_factory=list)
 
 
 @dataclass
@@ -53,7 +55,7 @@ def print_divider() -> None:
     console.print(Rule(style="grey50"))
 
 
-def _truncate(text, limit: int = 120) -> str:
+def _truncate(text: Any, limit: int = 120) -> str:
     """
     截断并 escape，用于 tool 参数 / 返回值 / 用户输入这类可能过长的内容。
     """
@@ -62,14 +64,14 @@ def _truncate(text, limit: int = 120) -> str:
     return escape(text)
 
 
-def _full(text) -> str:
+def _full(text: Any) -> str:
     """
     完整显示，只做 escape 不截断，用于 thinking 和 assistant text 这种用户关心的内容。
     """
     return escape(str(text).strip())
 
 
-def _format_part_line(part) -> str | None:
+def _format_part_line(part: Any) -> str | None:
     """
     把一条消息里的单个 part 格式化为带 Rich markup 的字符串。
     版式：图标 + role 标签独占一行，内容换行到下一行，不用「|」分隔。
@@ -110,7 +112,7 @@ def print_assistant_markdown(content: str) -> None:
     console.print(Padding(Markdown(content), (0, 0, 0, 2)))
 
 
-def print_part(part) -> None:
+def print_part(part: Any) -> None:
     """
     渲染单个消息 part：assistant 文本走 Markdown 块渲染，其余 part 是单行文本。
     """
@@ -128,7 +130,7 @@ def print_part(part) -> None:
         print_step(label, body[2:])
 
 
-def print_agent_steps(new_messages) -> None:
+def print_agent_steps(new_messages: Iterable[Any]) -> None:
     """
     主循环里调用：显示这一轮 Agent 新增的中间过程（thinking、文本、工具调用、工具返回）。
     """
