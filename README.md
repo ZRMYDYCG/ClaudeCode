@@ -37,6 +37,11 @@ zrcoder
 
 常用命令：`/help`、`/status`、`/new`、`/api-detail`、`/exit`。
 
+## 变更与发版
+
+- 用户可见变更：[CHANGELOG.md](CHANGELOG.md)
+- 维护者发版流程：[RELEASING.md](RELEASING.md)
+
 ## 从源码开发
 
 ```bash

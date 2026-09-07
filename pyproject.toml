@@ -31,6 +31,7 @@ classifiers = [
 Homepage = "https://github.com/ZRMYDYCG/ClaudeCode"
 Repository = "https://github.com/ZRMYDYCG/ClaudeCode"
 Issues = "https://github.com/ZRMYDYCG/ClaudeCode/issues"
+Changelog = "https://github.com/ZRMYDYCG/ClaudeCode/blob/main/CHANGELOG.md"
 
 [project.scripts]
 zrcoder = "core.cli:main"

@@ -1,0 +1,31 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+
+## [0.1.0] - 2026-09-08
+
+### Added
+
+- Terminal coding agent CLI (`zrcoder`) with OpenAI-compatible model providers
+- Built-in tools: read file, write file, run shell commands
+- Slash commands: `/help`, `/status`, `/new`, `/api-detail`, `/exit`
+- Session token usage tracking and per-turn API call detail view
+- Unit tests, GitHub Actions CI (ruff / mypy / pytest)
+- Cursor hooks for format-on-edit and verify-on-stop
+- First PyPI release under the package name `zrcoder`
+
+[Unreleased]: https://github.com/ZRMYDYCG/ClaudeCode/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/ZRMYDYCG/ClaudeCode/releases/tag/v0.1.0
