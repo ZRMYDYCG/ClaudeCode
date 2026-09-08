@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Print `retry-prompt` parts during the live agent loop
 - Catch Ctrl-C / unexpected errors in the agent turn without exiting the REPL
+- Auto-retry model HTTP 5xx / API errors with exponential backoff
+- Turn tool execution exceptions into tool results so the agent can recover
 
 ### Changed
 
