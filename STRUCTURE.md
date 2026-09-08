@@ -1,6 +1,8 @@
 ├── ClaudeCode
   ├── .agents
     ├── skills
+      ├── conventional-commit
+        ├── SKILL.md
       ├── domain-modeling
         ├── agents
           ├── openai.yaml
@@ -21,27 +23,54 @@
         ├── SKILL.md
   ├── .claude
     ├── skills
+      ├── conventional-commit
       ├── domain-modeling
       ├── grill-me
       ├── grill-with-docs
       ├── grilling
   ├── .cursor
+    ├── hooks
+      ├── format.sh
+      ├── verify.sh
+    ├── hooks.json
     ├── mcp.json
   ├── .github
     ├── workflows
+      ├── ci.yml
+      ├── publish.yml
       ├── update-project-structure.yml
   ├── core
     ├── agent
+      ├── __init__.py
+      ├── core.py
+      ├── hooks.py
+      ├── tools.py
     ├── ui
+      ├── __init__.py
+      ├── commands.py
+      ├── render.py
+    ├── __init__.py
+    ├── cli.py
+  ├── scripts
+    ├── release.sh
   ├── tests
+    ├── conftest.py
+    ├── test_commands.py
+    ├── test_core.py
+    ├── test_hooks.py
+    ├── test_main.py
+    ├── test_tools.py
   ├── .env.example
   ├── .gitignore
   ├── .python-version
   ├── AGENT.md
+  ├── CHANGELOG.md
   ├── CLAUDE.md
+  ├── LICENSE
   ├── main.py
   ├── pyproject.toml
   ├── README.md
+  ├── RELEASING.md
   ├── skills-lock.json
   ├── STRUCTURE.md
   ├── uv.lock
