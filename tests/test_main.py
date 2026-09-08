@@ -28,18 +28,14 @@ def test_handle_command_exit_breaks() -> None:
     assert cli.handle_command("/exit", state) == "break"
 
 
-def test_apply_result_updates_state_and_prints(monkeypatch) -> None:
+def test_apply_result_updates_state(monkeypatch) -> None:
     state = SessionState()
     history = [SimpleNamespace(parts=[])]
-    new_msgs = [SimpleNamespace(parts=[])]
     result = SimpleNamespace(
         all_messages=lambda: history,
-        new_messages=lambda: new_msgs,
         usage=SimpleNamespace(input_tokens=5, output_tokens=7),
     )
 
-    printed: list = []
-    monkeypatch.setattr(cli, "print_agent_steps", lambda msgs: printed.append(msgs))
     monkeypatch.setattr(cli, "api_call_log", [SimpleNamespace(model="m")])
 
     cli.apply_result(state, result)
@@ -48,7 +44,6 @@ def test_apply_result_updates_state_and_prints(monkeypatch) -> None:
     assert state.input_tokens == 5
     assert state.output_tokens == 7
     assert len(state.last_api_calls) == 1
-    assert printed == [new_msgs]
 
 
 def test_read_user_input_eof_returns_none(monkeypatch) -> None:

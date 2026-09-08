@@ -2,12 +2,17 @@
 终端主循环：读输入、分发斜杠命令、驱动 Agent。
 """
 
+from __future__ import annotations
+
+import asyncio
 from typing import Any, Literal
 
 from prompt_toolkit import PromptSession
+from pydantic_ai import Agent
+from pydantic_graph import End
 
 from core.agent import MODEL_NAME, agent, api_call_log
-from core.ui.commands import COMMANDS, SessionState, print_agent_steps, print_divider
+from core.ui.commands import COMMANDS, SessionState, print_divider, print_part
 from core.ui.render import console, print_welcome_banner
 
 # PromptSession 比内置 input() 好用：支持左右移光标编辑，并记住本次输入历史
@@ -50,15 +55,38 @@ def handle_command(user_input: str, state: SessionState) -> CommandAction:
 
 def apply_result(state: SessionState, result: Any) -> None:
     """
-    跑完一轮 Agent 后，把结果同步到 SessionState 并显示新增的中间过程。
+    跑完一轮 Agent 后，把结果同步到 SessionState。
     """
     state.history = result.all_messages()
     usage = result.usage
     state.input_tokens += usage.input_tokens
     state.output_tokens += usage.output_tokens
     state.last_api_calls = list(api_call_log)
-    # result.new_messages() 直接拿到这一轮新增的 message，不需要手动算偏移
-    print_agent_steps(result.new_messages())
+
+
+async def run_agent_loop(user_input: str, state: SessionState) -> None:
+    """
+    逐节点驱动 Agent 循环，每步实时打印。
+    """
+    api_call_log.clear()
+
+    async with agent.iter(user_input, message_history=state.history) as run:
+        node = run.next_node
+
+        while not isinstance(node, End):
+            node = await run.next(node)
+
+            if Agent.is_call_tools_node(node):
+                for response_part in node.model_response.parts:
+                    print_part(response_part)
+
+            elif Agent.is_model_request_node(node):
+                for request_part in node.request.parts:
+                    if getattr(request_part, "part_kind", None) == "tool-return":
+                        print_part(request_part)
+
+        apply_result(state, run.result)
+    console.print()
 
 
 def main() -> None:
@@ -80,10 +108,8 @@ def main() -> None:
         if action == "continue":
             continue
 
-        # 核心 Agent 循环：清空收集 buffer，跑一轮，把结果应用到 state
-        api_call_log.clear()
-        result = agent.run_sync(user_input, message_history=state.history)
-        apply_result(state, result)
+        # 核心 Agent 循环：自己驱动节点流转，实时打印每一步
+        asyncio.run(run_agent_loop(user_input, state))
 
 
 if __name__ == "__main__":

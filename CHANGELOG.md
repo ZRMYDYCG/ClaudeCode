@@ -9,9 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Stream agent steps live via `agent.iter` node loop
+
 ### Changed
 
 ### Fixed
+
+- Correct CLI imports to `core.agent` / `core.ui` (broken `agent` / `ui` absolute imports)
 
 ### Removed
 
