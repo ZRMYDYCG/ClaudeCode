@@ -9,15 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Stream agent steps live via `agent.iter` node loop
-
 ### Changed
+
+### Fixed
+
+### Removed
+
+## [0.2.0] - 2026-09-08
+
+### Added
+
+- Stream agent steps live via `agent.iter` node loop
 
 ### Fixed
 
 - Correct CLI imports to `core.agent` / `core.ui` (broken `agent` / `ui` absolute imports)
 
-### Removed
 
 ## [0.1.0] - 2026-09-08
 
@@ -31,5 +38,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cursor hooks for format-on-edit and verify-on-stop
 - First PyPI release under the package name `zrcoder`
 
-[Unreleased]: https://github.com/ZRMYDYCG/ClaudeCode/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/ZRMYDYCG/ClaudeCode/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/ZRMYDYCG/ClaudeCode/releases/tag/v0.2.0
 [0.1.0]: https://github.com/ZRMYDYCG/ClaudeCode/releases/tag/v0.1.0

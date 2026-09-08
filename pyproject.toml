@@ -1,6 +1,6 @@
 [project]
 name = "zrcoder"
-version = "0.1.0"
+version = "0.2.0"
 description = "Terminal coding agent chat — OpenAI-compatible APIs, tools, and slash commands"
 readme = "README.md"
 license = "MIT"
