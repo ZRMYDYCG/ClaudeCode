@@ -178,6 +178,9 @@ path.write_text(text2, encoding="utf-8")
 print(f"pyproject.toml version → {version}")
 PY
 
+# 版本号写进包名元数据后，同步 uv.lock，避免 CI --locked 失败
+uv lock
+
 # 从 CHANGELOG 抽出本版本说明，供 GitHub Release
 notes="$(
   python3 - "$VERSION" <<'PY'
@@ -201,7 +204,7 @@ print(body)
 PY
 )"
 
-git add CHANGELOG.md pyproject.toml
+git add CHANGELOG.md pyproject.toml uv.lock
 git commit -m "chore(release): v${VERSION}"
 
 git tag -a "$TAG" -m "Release ${TAG}"
