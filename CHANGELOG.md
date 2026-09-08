@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Print `retry-prompt` parts during the live agent loop
+- Catch Ctrl-C / unexpected errors in the agent turn without exiting the REPL
+
 ### Changed
 
 ### Fixed

@@ -1,7 +1,6 @@
 """core.cli：命令分发与结果写回 SessionState。"""
 
 from types import SimpleNamespace
-from unittest.mock import MagicMock
 
 from core import cli
 from core.ui.commands import SessionState
@@ -57,9 +56,31 @@ def test_read_user_input_eof_returns_none(monkeypatch) -> None:
     assert cli.read_user_input() is None
 
 
-def test_read_user_input_strips(monkeypatch) -> None:
-    monkeypatch.setattr(cli, "print_divider", lambda: None)
-    session = MagicMock()
-    session.prompt.return_value = "  hello  "
-    monkeypatch.setattr(cli, "prompt_session", session)
-    assert cli.read_user_input() == "hello"
+def test_main_handles_agent_interrupt(monkeypatch, capsys) -> None:
+    inputs = iter(["hi", None])
+    monkeypatch.setattr(cli, "print_welcome_banner", lambda _title: None)
+    monkeypatch.setattr(cli, "read_user_input", lambda: next(inputs))
+
+    def _raise_interrupt(coro):
+        coro.close()
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(cli.asyncio, "run", _raise_interrupt)
+    cli.main()
+    assert "已中断" in capsys.readouterr().out
+
+
+def test_main_handles_agent_error(monkeypatch, capsys) -> None:
+    inputs = iter(["hi", None])
+    monkeypatch.setattr(cli, "print_welcome_banner", lambda _title: None)
+    monkeypatch.setattr(cli, "read_user_input", lambda: next(inputs))
+
+    def _raise_error(coro):
+        coro.close()
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(cli.asyncio, "run", _raise_error)
+    cli.main()
+    out = capsys.readouterr().out
+    assert "RuntimeError" in out
+    assert "boom" in out

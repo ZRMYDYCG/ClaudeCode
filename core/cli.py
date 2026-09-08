@@ -66,7 +66,7 @@ def apply_result(state: SessionState, result: Any) -> None:
 
 async def run_agent_loop(user_input: str, state: SessionState) -> None:
     """
-    逐节点驱动 Agent 循环，每步实时打印。
+    展开 agent.run_sync()，逐节点驱动 Agent 循环，每步实时打印。
     """
     api_call_log.clear()
 
@@ -82,7 +82,8 @@ async def run_agent_loop(user_input: str, state: SessionState) -> None:
 
             elif Agent.is_model_request_node(node):
                 for request_part in node.request.parts:
-                    if getattr(request_part, "part_kind", None) == "tool-return":
+                    kind = getattr(request_part, "part_kind", None)
+                    if kind in ("tool-return", "retry-prompt"):
                         print_part(request_part)
 
         apply_result(state, run.result)
@@ -109,7 +110,12 @@ def main() -> None:
             continue
 
         # 核心 Agent 循环：自己驱动节点流转，实时打印每一步
-        asyncio.run(run_agent_loop(user_input, state))
+        try:
+            asyncio.run(run_agent_loop(user_input, state))
+        except KeyboardInterrupt:
+            console.print("\n[bold yellow]已中断[/]\n")
+        except Exception as e:
+            console.print(f"\n[bold red]✗ {type(e).__name__}: {e}[/]\n")
 
 
 if __name__ == "__main__":
