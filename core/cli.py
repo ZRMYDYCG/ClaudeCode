@@ -12,6 +12,7 @@ from pydantic_ai import Agent
 from pydantic_graph import End
 
 from core.agent import MODEL_NAME, agent, api_call_log
+from core.session import append_messages, new_session_id
 from core.ui.commands import COMMANDS, SessionState, print_divider, print_part
 from core.ui.render import console, print_welcome_banner
 
@@ -55,13 +56,14 @@ def handle_command(user_input: str, state: SessionState) -> CommandAction:
 
 def apply_result(state: SessionState, result: Any) -> None:
     """
-    跑完一轮 Agent 后，把结果同步到 SessionState。
+    跑完一轮 Agent 后，把结果同步到 SessionState，并追加写入会话文件。
     """
     state.history = result.all_messages()
     usage = result.usage
     state.input_tokens += usage.input_tokens
     state.output_tokens += usage.output_tokens
     state.last_api_calls = list(api_call_log)
+    append_messages(state.session_id, result.new_messages())
 
 
 async def run_agent_loop(user_input: str, state: SessionState) -> None:
@@ -91,7 +93,10 @@ async def run_agent_loop(user_input: str, state: SessionState) -> None:
 
 
 def main() -> None:
-    state = SessionState(model_name=MODEL_NAME)
+    state = SessionState(
+        model_name=MODEL_NAME,
+        session_id=new_session_id(),
+    )
     print_welcome_banner("Zrcoder")
 
     while True:

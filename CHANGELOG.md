@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Auto-retry model HTTP 5xx / API errors with exponential backoff
 - Turn tool execution exceptions into tool results so the agent can recover
 - Raise `ModelRetry` from tools for fixable errors (missing path, permission, directory)
+- Persist each turn's new messages to `~/.zrcoder/projects/<cwd>/<session>.jsonl`
+- `/resume` command to pick and replay a past session via questionary
+- Coerce flaky OpenAI-compatible ChatCompletion fields; retry `UnexpectedModelBehavior`
 
 ### Changed
 

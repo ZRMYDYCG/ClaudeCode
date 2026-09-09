@@ -28,14 +28,18 @@ def test_handle_command_exit_breaks() -> None:
 
 
 def test_apply_result_updates_state(monkeypatch) -> None:
-    state = SessionState()
+    state = SessionState(session_id="sid-1")
     history = [SimpleNamespace(parts=[])]
+    new_msgs = [SimpleNamespace(parts=[])]
     result = SimpleNamespace(
         all_messages=lambda: history,
+        new_messages=lambda: new_msgs,
         usage=SimpleNamespace(input_tokens=5, output_tokens=7),
     )
 
+    appended: list = []
     monkeypatch.setattr(cli, "api_call_log", [SimpleNamespace(model="m")])
+    monkeypatch.setattr(cli, "append_messages", lambda sid, msgs: appended.append((sid, msgs)))
 
     cli.apply_result(state, result)
 
@@ -43,6 +47,7 @@ def test_apply_result_updates_state(monkeypatch) -> None:
     assert state.input_tokens == 5
     assert state.output_tokens == 7
     assert len(state.last_api_calls) == 1
+    assert appended == [("sid-1", new_msgs)]
 
 
 def test_read_user_input_eof_returns_none(monkeypatch) -> None:

@@ -1,16 +1,20 @@
 """core.ui.commands：会话状态、斜杠命令与 part 格式化。"""
 
+from datetime import datetime
 from types import SimpleNamespace
+from unittest.mock import MagicMock
 
 from core.ui.commands import (
     COMMANDS,
     SessionState,
     _format_part_line,
+    _summary_line,
     _truncate,
     cmd_api_detail,
     cmd_exit,
     cmd_help,
     cmd_new,
+    cmd_resume,
     cmd_status,
 )
 
@@ -62,6 +66,7 @@ def test_cmd_new_clears_state() -> None:
         output_tokens=20,
         model_name="m",
         last_api_calls=["call"],
+        session_id="old-id",
     )
     assert cmd_new(state) is True
     assert state.history == []
@@ -69,6 +74,8 @@ def test_cmd_new_clears_state() -> None:
     assert state.output_tokens == 0
     assert state.last_api_calls == []
     assert state.model_name == "m"
+    assert state.session_id != "old-id"
+    assert state.session_id
 
 
 def test_cmd_exit_returns_false() -> None:
@@ -110,7 +117,62 @@ def test_cmd_api_detail_with_calls(capsys) -> None:
 
 
 def test_commands_registry() -> None:
-    assert set(COMMANDS) == {"new", "status", "api-detail", "help", "exit"}
+    assert set(COMMANDS) == {"new", "resume", "status", "api-detail", "help", "exit"}
     for name, cmd in COMMANDS.items():
         assert cmd.name == name
         assert callable(cmd.handler)
+
+
+def test_summary_line_truncates() -> None:
+    mtime = datetime(2026, 9, 9, 12, 30)
+    line = _summary_line(mtime, "hello " * 20)
+    assert line.startswith("09-09 12:30")
+    assert line.endswith("...")
+
+
+def test_cmd_resume_empty(monkeypatch, capsys) -> None:
+    monkeypatch.setattr("core.ui.commands.session.list_sessions", lambda: [])
+    assert cmd_resume(SessionState()) is True
+    assert "还没有历史会话" in capsys.readouterr().out
+
+
+def test_cmd_resume_cancel(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "core.ui.commands.session.list_sessions",
+        lambda: [("sid", datetime(2026, 1, 1, 0, 0), "hi")],
+    )
+    select = MagicMock()
+    select.ask.return_value = None
+    monkeypatch.setattr("core.ui.commands.questionary.select", lambda *a, **k: select)
+    state = SessionState(session_id="old")
+    assert cmd_resume(state) is True
+    assert state.session_id == "old"
+
+
+def test_cmd_resume_loads_history(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(
+        "core.ui.commands.session.list_sessions",
+        lambda: [("abcdef12-xxxx", datetime(2026, 1, 1, 0, 0), "hello")],
+    )
+    select = MagicMock()
+    select.ask.return_value = "abcdef12-xxxx"
+    monkeypatch.setattr("core.ui.commands.questionary.select", lambda *a, **k: select)
+
+    response = SimpleNamespace(
+        kind="response",
+        usage=SimpleNamespace(input_tokens=3, output_tokens=4),
+        parts=[SimpleNamespace(part_kind="text", content="ok")],
+    )
+    monkeypatch.setattr(
+        "core.ui.commands.session.load_history",
+        lambda _sid: [response],
+    )
+    monkeypatch.setattr("core.ui.commands.print_part", lambda _part: None)
+
+    state = SessionState()
+    assert cmd_resume(state) is True
+    assert state.session_id == "abcdef12-xxxx"
+    assert state.history == [response]
+    assert state.input_tokens == 3
+    assert state.output_tokens == 4
+    assert "已恢复会话 abcdef12" in capsys.readouterr().out

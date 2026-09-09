@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from pydantic_ai.capabilities import Hooks
-from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError
+from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UnexpectedModelBehavior
 
 from core.ui.render import console
 
@@ -93,6 +93,7 @@ async def _retry_on_error(ctx: Any, *, request_context: Any, handler: Any) -> An
     包裹 model 请求，遇到可重试错误时自动指数退避重试。
 
     重试在 wrap 内部完成，对话历史和 before/after hooks 不受影响。
+    兼容网关偶发的 UnexpectedModelBehavior（响应 schema 不对）也会重试。
     """
     for attempt in range(MAX_RETRIES + 1):
         try:
@@ -107,6 +108,15 @@ async def _retry_on_error(ctx: Any, *, request_context: Any, handler: Any) -> An
             console.print(
                 f"[bold yellow]⟳ HTTP {e.status_code}，{wait}s 后重试 "
                 f"({attempt + 1}/{MAX_RETRIES})...[/]"
+            )
+            await asyncio.sleep(wait)
+        except UnexpectedModelBehavior as e:
+            if attempt >= MAX_RETRIES:
+                console.print(f"[bold red]✗ 模型响应异常，重试 {MAX_RETRIES} 次后仍失败：{e}[/]")
+                raise
+            wait = 2**attempt
+            console.print(
+                f"[bold yellow]⟳ 模型响应异常，{wait}s 后重试 ({attempt + 1}/{MAX_RETRIES})...[/]"
             )
             await asyncio.sleep(wait)
         except ModelAPIError:

@@ -1,12 +1,16 @@
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Any
 
+import questionary
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.markdown import Heading, Markdown
 from rich.markup import escape
 from rich.padding import Padding
 from rich.rule import Rule
+
+from core import session
 
 from .render import console, print_step
 
@@ -38,6 +42,8 @@ class SessionState:
     model_name: str = ""
     # 最近一轮 user input 触发的所有 model API 调用记录
     last_api_calls: list[Any] = field(default_factory=list)
+    # 当前会话 id，对应 ~/.…/projects/<cwd>/<id>.jsonl
+    session_id: str = ""
 
 
 @dataclass
@@ -157,18 +163,74 @@ def cmd_help(state: SessionState) -> bool:
 
 def cmd_new(state: SessionState) -> bool:
     """
-    开启新会话：清空历史、token 计数、API 调用记录。
+    开启新会话：清空历史、token 计数、API 调用记录，并换一个 session_id。
     """
     state.history.clear()
     state.input_tokens = 0
     state.output_tokens = 0
     state.last_api_calls.clear()
+    state.session_id = session.new_session_id()
     console.print("已开启新会话\n")
+    return True
+
+
+def _summary_line(mtime: datetime, prompt: str) -> str:
+    """
+    拼一条会话列表的展示文本：修改时间 + 首条用户输入摘要。
+    """
+    prompt = " ".join(str(prompt).split())
+    if len(prompt) > 50:
+        prompt = prompt[:50] + "..."
+    return f"{mtime:%m-%d %H:%M}  {prompt}"
+
+
+def cmd_resume(state: SessionState) -> bool:
+    """
+    列出当前项目的历史会话，选中后恢复对话历史。
+    """
+    sessions = session.list_sessions()
+    if not sessions:
+        console.print("(当前项目还没有历史会话)\n")
+        return True
+
+    choices = [
+        questionary.Choice(title=_summary_line(mtime, prompt), value=sid)
+        for sid, mtime, prompt in sessions
+    ]
+    selected = questionary.select(
+        "选择要恢复的会话（上下键移动，回车确认）：",
+        choices=choices,
+    ).ask()
+    # 用户按 Ctrl+C 取消选择
+    if selected is None:
+        return True
+
+    # 还原对话历史，并把会话 ID 切换成选中的旧会话，后续消息继续追加到同一个文件
+    state.history = session.load_history(selected)
+    state.session_id = selected
+
+    # jsonl 里每条模型回复都带 usage，把会话的 token 用量累加回来
+    state.input_tokens = sum(
+        m.usage.input_tokens for m in state.history if getattr(m, "kind", None) == "response"
+    )
+    state.output_tokens = sum(
+        m.usage.output_tokens for m in state.history if getattr(m, "kind", None) == "response"
+    )
+    # 最近一轮的 API 调用记录只在进程内有效，没法恢复，清空
+    state.last_api_calls.clear()
+
+    # 把恢复的对话回放到屏幕上
+    console.print(f"\n已恢复会话 {selected[:8]}，共 {len(state.history)} 条消息：\n")
+    for msg in state.history:
+        for part in msg.parts:
+            print_part(part)
+    console.print()
     return True
 
 
 def cmd_status(state: SessionState) -> bool:
     console.print(f"模型：           {state.model_name}")
+    console.print(f"会话 ID：        {state.session_id or '(无)'}")
     console.print(f"历史消息条数：    {len(state.history)}")
     console.print(f"累计输入 tokens：{state.input_tokens}")
     console.print(f"累计输出 tokens：{state.output_tokens}\n")
@@ -205,6 +267,7 @@ def cmd_api_detail(state: SessionState) -> bool:
 
 COMMANDS = {
     "new": Command("new", "开启新会话", cmd_new),
+    "resume": Command("resume", "恢复历史会话", cmd_resume),
     "status": Command("status", "显示当前会话状态", cmd_status),
     "api-detail": Command("api-detail", "显示最近一轮 model API 调用详情", cmd_api_detail),
     "help": Command("help", "显示可用命令", cmd_help),

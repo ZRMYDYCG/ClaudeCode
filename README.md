@@ -1,6 +1,10 @@
 # Zrcoder
 
-终端里的编程助手：连 OpenAI 兼容 API，可读写文件、执行命令，并支持 `/help` 等斜杠命令。
+<p align="center">
+  <img src="docs/zrcoder-banner.jpg" alt="Zrcoder — AI Terminal CLI" width="100%">
+</p>
+
+终端里的编程助手：连 OpenAI 兼容 API，可读写文件、执行命令，并支持斜杠命令与会话恢复。
 
 ## 安装
 
@@ -20,7 +24,11 @@ pip install zrcoder
 
 ## 配置
 
-在环境变量或项目目录的 `.env` 中设置（可参考 `.env.example`）：
+设置环境变量，或在以下位置之一创建 `.env`（可参考 `.env.example`）：
+
+- 当前目录：`./.env`
+- 用户配置：`~/.config/zrcoder/.env`
+- 兼容路径：`~/.zrcoder.env`
 
 ```bash
 export API_KEY=your_api_key
@@ -35,7 +43,7 @@ export BASE_URL=https://api.example.com/v1
 zrcoder
 ```
 
-常用命令：`/help`、`/status`、`/new`、`/api-detail`、`/exit`。
+常用命令：`/help`、`/status`、`/new`、`/resume`、`/api-detail`、`/exit`。
 
 ## 变更与发版
 

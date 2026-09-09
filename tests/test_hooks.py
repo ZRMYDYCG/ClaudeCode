@@ -4,7 +4,7 @@ import asyncio
 from types import SimpleNamespace
 
 import pytest
-from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError
+from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UnexpectedModelBehavior
 
 from core.agent.hooks import (
     MAX_RETRIES,
@@ -115,7 +115,26 @@ def test_retry_on_api_error_exhausted(monkeypatch: pytest.MonkeyPatch) -> None:
         asyncio.run(_retry_on_error(None, request_context=object(), handler=handler))
 
 
-def test_retry_max_attempts(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_retry_on_unexpected_model_behavior(monkeypatch: pytest.MonkeyPatch) -> None:
+    sleeps: list[float] = []
+
+    async def fake_sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    monkeypatch.setattr("core.agent.hooks.asyncio.sleep", fake_sleep)
+    calls = {"n": 0}
+
+    async def handler(_ctx: object) -> str:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise UnexpectedModelBehavior("bad schema")
+        return "ok"
+
+    result = asyncio.run(_retry_on_error(None, request_context=object(), handler=handler))
+    assert result == "ok"
+    assert calls["n"] == 2
+    assert sleeps == [1]
+
     async def fake_sleep(_seconds: float) -> None:
         return None
 
