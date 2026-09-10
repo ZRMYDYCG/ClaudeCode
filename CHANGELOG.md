@@ -9,11 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Permission modes (`default` / `acceptEdits` / `bypass`) with Shift+Tab cycling
+- Interactive approval picker before write/run tool calls; session-level “always allow”
+- Persistent bottom Repl input with working spinner and ESC / Ctrl+C interrupt
+- `run_command` self-check that forces approval for dangerous patterns (`rm` / `sudo` / `dd` / `mkfs`)
+
 ### Changed
+
+- Drive the CLI main loop through the async Repl instead of `PromptSession`
+- Use stock `OpenAIChatModel` (drop the custom response-coercion wrapper)
 
 ### Fixed
 
 ### Removed
+
+- OpenAI-compatible ChatCompletion field coercion layer (`openai_compat`)
 
 ## [0.3.0] - 2026-09-09
 
