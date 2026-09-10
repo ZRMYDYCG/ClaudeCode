@@ -5,44 +5,27 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 from typing import Any, Literal
 
-from prompt_toolkit import PromptSession
 from pydantic_ai import Agent
 from pydantic_graph import End
 
 from core.agent import MODEL_NAME, agent, api_call_log
 from core.session import append_messages, new_session_id
-from core.ui.commands import COMMANDS, SessionState, print_divider, print_part
+from core.ui.commands import COMMANDS, SessionState, print_part
+from core.ui.input import Repl
 from core.ui.render import console, print_welcome_banner
-
-# PromptSession 比内置 input() 好用：支持左右移光标编辑，并记住本次输入历史
-prompt_session: PromptSession[str] = PromptSession()
 
 CommandAction = Literal["pass", "continue", "break"]
 
 
-def read_user_input() -> str | None:
-    """
-    打印上横线并读一行用户输入；回车后再补一条下横线。
-    返回 None 表示用户希望退出（Ctrl-C / Ctrl-D）。
-    """
-    print_divider()
-    try:
-        user_input = prompt_session.prompt("❯ ").strip()
-    except (EOFError, KeyboardInterrupt):
-        print()
-        return None
-    print_divider()
-    return user_input
-
-
-def handle_command(user_input: str, state: SessionState) -> CommandAction:
+async def handle_command(user_input: str, state: SessionState) -> CommandAction:
     """
     处理以 / 开头的命令。
-    返回 'pass'：不是命令，主循环继续往下走交给 Agent；
-    返回 'continue'：命令已处理，主循环跳到下一轮；
-    返回 'break'：命令要求退出主循环。
+    返回 'pass'：不是命令，交给 Agent；
+    返回 'continue'：命令已处理，进入下一轮；
+    返回 'break'：命令要求退出程序。
     """
     if not user_input.startswith("/"):
         return "pass"
@@ -51,7 +34,11 @@ def handle_command(user_input: str, state: SessionState) -> CommandAction:
     if command is None:
         console.print(f"未知命令：/{cmd_name}，输入 /help 查看可用命令\n")
         return "continue"
-    return "continue" if command.handler(state) else "break"
+    result = command.handler(state)
+    # 个别命令（如 /resume）要弹交互式列表，是异步的，需要 await
+    if inspect.isawaitable(result):
+        result = await result
+    return "continue" if result else "break"
 
 
 def apply_result(state: SessionState, result: Any) -> None:
@@ -92,35 +79,40 @@ async def run_agent_loop(user_input: str, state: SessionState) -> None:
     console.print()
 
 
-def main() -> None:
+async def async_main() -> None:
     state = SessionState(
         model_name=MODEL_NAME,
         session_id=new_session_id(),
     )
     print_welcome_banner("Zrcoder")
 
-    while True:
-        # 读用户输入
-        user_input = read_user_input()
-        if user_input is None:
-            break
-        if not user_input:
-            continue
+    # 常驻输入区：输入框整个会话期间不消失
+    repl = Repl(state)
 
-        # 处理 / 开头的命令
-        action = handle_command(user_input, state)
+    async def on_submit(user_input: str) -> None:
+        # 每次回车提交一行输入，都走这里
+        # 先处理 / 开头的命令
+        action = await handle_command(user_input, state)
         if action == "break":
-            break
+            # 命令要求退出，结束常驻输入区
+            repl.exit()
+            return
         if action == "continue":
-            continue
+            return
 
-        # 核心 Agent 循环：自己驱动节点流转，实时打印每一步
-        try:
-            asyncio.run(run_agent_loop(user_input, state))
-        except KeyboardInterrupt:
-            console.print("\n[bold yellow]已中断[/]\n")
-        except Exception as e:
-            console.print(f"\n[bold red]✗ {type(e).__name__}: {e}[/]\n")
+        # 核心 Agent 循环：开请求时显示 working...，结束 / 被打断后由 Repl 统一隐藏；
+        # 中途按 ESC / Ctrl+C 会打断
+        repl.start_working()
+        await run_agent_loop(user_input, state)
+
+    await repl.run(on_submit)
+
+
+def main() -> None:
+    try:
+        asyncio.run(async_main())
+    except (KeyboardInterrupt, EOFError):
+        pass
 
 
 if __name__ == "__main__":

@@ -1,9 +1,11 @@
 """core.ui.commands：会话状态、斜杠命令与 part 格式化。"""
 
+import asyncio
 from datetime import datetime
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
+from core import permissions
 from core.ui.commands import (
     COMMANDS,
     SessionState,
@@ -60,6 +62,7 @@ def test_format_part_line_kinds() -> None:
 
 
 def test_cmd_new_clears_state() -> None:
+    permissions.state.session_allowed.add("run_command")
     state = SessionState(
         history=["a"],
         input_tokens=10,
@@ -76,6 +79,7 @@ def test_cmd_new_clears_state() -> None:
     assert state.model_name == "m"
     assert state.session_id != "old-id"
     assert state.session_id
+    assert permissions.state.session_allowed == set()
 
 
 def test_cmd_exit_returns_false() -> None:
@@ -89,6 +93,7 @@ def test_cmd_help_and_status(capsys) -> None:
     out = capsys.readouterr().out
     assert "/help" in out or "help" in out
     assert "test-model" in out
+    assert permissions.state.mode in out
     assert "1" in out and "2" in out
 
 
@@ -132,7 +137,7 @@ def test_summary_line_truncates() -> None:
 
 def test_cmd_resume_empty(monkeypatch, capsys) -> None:
     monkeypatch.setattr("core.ui.commands.session.list_sessions", lambda: [])
-    assert cmd_resume(SessionState()) is True
+    assert asyncio.run(cmd_resume(SessionState())) is True
     assert "还没有历史会话" in capsys.readouterr().out
 
 
@@ -142,20 +147,21 @@ def test_cmd_resume_cancel(monkeypatch) -> None:
         lambda: [("sid", datetime(2026, 1, 1, 0, 0), "hi")],
     )
     select = MagicMock()
-    select.ask.return_value = None
+    select.ask_async = AsyncMock(return_value=None)
     monkeypatch.setattr("core.ui.commands.questionary.select", lambda *a, **k: select)
     state = SessionState(session_id="old")
-    assert cmd_resume(state) is True
+    assert asyncio.run(cmd_resume(state)) is True
     assert state.session_id == "old"
 
 
 def test_cmd_resume_loads_history(monkeypatch, capsys) -> None:
+    permissions.state.session_allowed.add("write_file")
     monkeypatch.setattr(
         "core.ui.commands.session.list_sessions",
         lambda: [("abcdef12-xxxx", datetime(2026, 1, 1, 0, 0), "hello")],
     )
     select = MagicMock()
-    select.ask.return_value = "abcdef12-xxxx"
+    select.ask_async = AsyncMock(return_value="abcdef12-xxxx")
     monkeypatch.setattr("core.ui.commands.questionary.select", lambda *a, **k: select)
 
     response = SimpleNamespace(
@@ -170,9 +176,10 @@ def test_cmd_resume_loads_history(monkeypatch, capsys) -> None:
     monkeypatch.setattr("core.ui.commands.print_part", lambda _part: None)
 
     state = SessionState()
-    assert cmd_resume(state) is True
+    assert asyncio.run(cmd_resume(state)) is True
     assert state.session_id == "abcdef12-xxxx"
     assert state.history == [response]
     assert state.input_tokens == 3
     assert state.output_tokens == 4
+    assert permissions.state.session_allowed == set()
     assert "已恢复会话 abcdef12" in capsys.readouterr().out
