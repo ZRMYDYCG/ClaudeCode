@@ -8,10 +8,10 @@ from urllib.parse import urlparse, urlunparse
 
 from dotenv import load_dotenv
 from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from .hooks import hooks
-from .openai_compat import CompatibleOpenAIChatModel
 from .tools import TOOLS
 
 load_dotenv()
@@ -41,7 +41,7 @@ def _normalize_openai_base_url(url: str) -> str:
 
 MODEL_NAME = os.environ.get("MODEL_NAME", "deepseek-v4-flash")
 
-model = CompatibleOpenAIChatModel(
+model = OpenAIChatModel(
     MODEL_NAME,
     provider=OpenAIProvider(base_url=_normalize_openai_base_url(BASE_URL), api_key=API_KEY),
 )
