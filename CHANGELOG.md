@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Fixed
+
+### Removed
+
+## [0.4.0] - 2026-09-10
+
+### Added
+
 - Permission modes (`default` / `acceptEdits` / `bypass`) with Shift+Tab cycling
 - Interactive approval picker before write/run tool calls; session-level “always allow”
 - Persistent bottom Repl input with working spinner and ESC / Ctrl+C interrupt
@@ -19,11 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Drive the CLI main loop through the async Repl instead of `PromptSession`
 - Use stock `OpenAIChatModel` (drop the custom response-coercion wrapper)
 
-### Fixed
-
 ### Removed
 
 - OpenAI-compatible ChatCompletion field coercion layer (`openai_compat`)
+
 
 ## [0.3.0] - 2026-09-09
 
@@ -62,7 +71,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Cursor hooks for format-on-edit and verify-on-stop
 - First PyPI release under the package name `zrcoder`
 
-[Unreleased]: https://github.com/ZRMYDYCG/ClaudeCode/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/ZRMYDYCG/ClaudeCode/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/ZRMYDYCG/ClaudeCode/releases/tag/v0.4.0
 [0.3.0]: https://github.com/ZRMYDYCG/ClaudeCode/releases/tag/v0.3.0
 [0.2.0]: https://github.com/ZRMYDYCG/ClaudeCode/releases/tag/v0.2.0
 [0.1.0]: https://github.com/ZRMYDYCG/ClaudeCode/releases/tag/v0.1.0
