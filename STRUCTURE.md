@@ -48,9 +48,14 @@
     ├── ui
       ├── __init__.py
       ├── commands.py
+      ├── input.py
       ├── render.py
     ├── __init__.py
     ├── cli.py
+    ├── permissions.py
+    ├── session.py
+  ├── docs
+    ├── zrcoder-banner.jpg
   ├── scripts
     ├── release.sh
   ├── tests
@@ -59,6 +64,7 @@
     ├── test_core.py
     ├── test_hooks.py
     ├── test_main.py
+    ├── test_session.py
     ├── test_tools.py
   ├── .env.example
   ├── .gitignore
