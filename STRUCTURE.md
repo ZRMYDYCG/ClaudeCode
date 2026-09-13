@@ -1,6 +1,24 @@
 ├── ClaudeCode
   ├── .agents
     ├── skills
+      ├── async-python-patterns
+        ├── references
+          ├── details.md
+        ├── SKILL.md
+      ├── building-pydantic-ai-agents
+        ├── references
+          ├── AGENTS-CORE.md
+          ├── ARCHITECTURE.md
+          ├── CAPABILITIES-AND-HOOKS.md
+          ├── COMMON-TASKS.md
+          ├── INPUT-AND-HISTORY.md
+          ├── NATIVE-TOOLS.md
+          ├── ON-DEMAND-CAPABILITIES.md
+          ├── ORCHESTRATION-AND-INTEGRATIONS.md
+          ├── TESTING-AND-DEBUGGING.md
+          ├── TOOLS-ADVANCED.md
+          ├── TOOLS-CORE.md
+        ├── SKILL.md
       ├── conventional-commit
         ├── SKILL.md
       ├── domain-modeling
@@ -21,13 +39,37 @@
         ├── agents
           ├── openai.yaml
         ├── SKILL.md
+      ├── pydantic
+        ├── SKILL.md
+      ├── pydantic-ai-harness
+        ├── references
+          ├── CODE-MODE.md
+        ├── SKILL.md
+      ├── python-code-style
+        ├── SKILL.md
+      ├── python-testing-patterns
+        ├── references
+          ├── advanced-patterns.md
+          ├── details.md
+        ├── SKILL.md
+      ├── uv-package-manager
+        ├── references
+          ├── advanced-patterns.md
+        ├── SKILL.md
   ├── .claude
     ├── skills
+      ├── async-python-patterns
+      ├── building-pydantic-ai-agents
       ├── conventional-commit
       ├── domain-modeling
       ├── grill-me
       ├── grill-with-docs
       ├── grilling
+      ├── pydantic
+      ├── pydantic-ai-harness
+      ├── python-code-style
+      ├── python-testing-patterns
+      ├── uv-package-manager
   ├── .cursor
     ├── hooks
       ├── format.sh
@@ -39,6 +81,43 @@
       ├── ci.yml
       ├── publish.yml
       ├── update-project-structure.yml
+  ├── agent
+    ├── skills
+      ├── async-python-patterns
+        ├── references
+          ├── details.md
+        ├── SKILL.md
+      ├── building-pydantic-ai-agents
+        ├── references
+          ├── AGENTS-CORE.md
+          ├── ARCHITECTURE.md
+          ├── CAPABILITIES-AND-HOOKS.md
+          ├── COMMON-TASKS.md
+          ├── INPUT-AND-HISTORY.md
+          ├── NATIVE-TOOLS.md
+          ├── ON-DEMAND-CAPABILITIES.md
+          ├── ORCHESTRATION-AND-INTEGRATIONS.md
+          ├── TESTING-AND-DEBUGGING.md
+          ├── TOOLS-ADVANCED.md
+          ├── TOOLS-CORE.md
+        ├── SKILL.md
+      ├── pydantic
+        ├── SKILL.md
+      ├── pydantic-ai-harness
+        ├── references
+          ├── CODE-MODE.md
+        ├── SKILL.md
+      ├── python-code-style
+        ├── SKILL.md
+      ├── python-testing-patterns
+        ├── references
+          ├── advanced-patterns.md
+          ├── details.md
+        ├── SKILL.md
+      ├── uv-package-manager
+        ├── references
+          ├── advanced-patterns.md
+        ├── SKILL.md
   ├── core
     ├── agent
       ├── __init__.py
@@ -48,9 +127,14 @@
     ├── ui
       ├── __init__.py
       ├── commands.py
+      ├── input.py
       ├── render.py
     ├── __init__.py
     ├── cli.py
+    ├── permissions.py
+    ├── session.py
+  ├── docs
+    ├── zrcoder-banner.jpg
   ├── scripts
     ├── release.sh
   ├── tests
@@ -59,6 +143,7 @@
     ├── test_core.py
     ├── test_hooks.py
     ├── test_main.py
+    ├── test_session.py
     ├── test_tools.py
   ├── .env.example
   ├── .gitignore
