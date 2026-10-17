@@ -16,16 +16,18 @@ from prompt_toolkit.layout import HSplit, Layout, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.styles import Style
 
-# 三种权限模式
+# 四种权限模式
 # default：写文件、跑命令要授权，读文件等只读操作自动放行
 DEFAULT = "default"
 # acceptEdits：读写文件自动放行，其他工具仍需授权
 ACCEPT_EDITS = "acceptEdits"
+# auto：本该弹窗的调用交给 LLM classifier 判定，安全就放行，危险才拦截
+AUTO = "auto"
 # bypass：一切放行，不再询问
 BYPASS = "bypass"
 
-# 权限模式按 Shift+Tab 循环切换的顺序
-MODES = [DEFAULT, ACCEPT_EDITS, BYPASS]
+# 权限模式按 Shift+Tab 循环切换的顺序，auto 排在 acceptEdits 和 bypass 之间：比前者省心，比后者安全
+MODES = [DEFAULT, ACCEPT_EDITS, AUTO, BYPASS]
 
 # 只读工具，任何模式都自动放行（读取不会改动系统，放行没风险）
 READONLY_TOOLS = {"read_file"}
@@ -81,8 +83,9 @@ def compute_decision(tool_name: str, args: dict[str, Any]) -> str:
     # 只读工具：任何模式都自动放行
     if tool_name in READONLY_TOOLS:
         return "allow"
-    # acceptEdits 模式：编辑文件放行，命令等其他工具仍要审批
-    if state.mode == ACCEPT_EDITS and tool_name in EDIT_TOOLS:
+    # acceptEdits / auto 模式：编辑文件放行，命令等其他工具仍走后面的判定
+    # auto 模式包含这条是个 fast path——文件编辑用现成规则就能判，不值得多花一次 classifier 请求
+    if state.mode in (ACCEPT_EDITS, AUTO) and tool_name in EDIT_TOOLS:
         return "allow"
     # default 模式，或没命中任何放行规则：询问用户
     return "ask"
@@ -90,7 +93,7 @@ def compute_decision(tool_name: str, args: dict[str, Any]) -> str:
 
 def cycle_mode() -> str:
     """
-    按 default -> acceptEdits -> bypass -> default 循环切换。
+    按 default -> acceptEdits -> auto -> bypass -> default 循环切换。
     """
     index = MODES.index(state.mode)
     state.mode = MODES[(index + 1) % len(MODES)]

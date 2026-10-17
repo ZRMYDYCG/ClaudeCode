@@ -15,8 +15,8 @@ from typing import Any
 from pydantic_ai.capabilities import Hooks
 from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UnexpectedModelBehavior
 
-from core import permissions
-from core.ui.render import console
+from core import classifier, permissions
+from core.ui.render import console, print_step
 
 MAX_RETRIES = 3
 
@@ -142,13 +142,35 @@ async def _check_permission(ctx: Any, *, call: Any, tool_def: Any, args: Any, ha
     """
     工具执行前的权限关卡。allow 就调用 handler 真正执行；
     ask 就弹审批列表；deny 则把拒绝原因当作工具结果回填，让模型自行纠正。
+    auto 模式下，ask 不直接弹窗，先交给 LLM classifier 判定。
     """
     decision = permissions.compute_decision(call.tool_name, args)
     if decision == "allow":
         # 放行，handler(args) 才是真正执行工具的那一步
         return await handler(args)
 
-    # decision == "ask"，弹审批让用户决定
+    # decision == "ask" 且当前是 auto 模式：让 classifier 替用户做决定
+    if permissions.state.mode == permissions.AUTO:
+        # 审查过程对齐成和 thinking、tool_call 一样的「图标 + 标签独占一行、内容换行」格式，用蓝色让用户一眼看到 classifier 在工作
+        print_step("[blue]◆ auto_check[/]", f"[blue dim]正在请 LLM 审查 {call.tool_name}...[/]")
+        verdict = await classifier.classify(ctx.messages, call.tool_name, args)
+
+        if verdict.get("error"):
+            # classifier 自己出错，回退到下面的人工审批弹窗，不能因为审查失败就放行
+            print_step("[yellow]⚠ auto_check[/]", f"[yellow]{verdict['reason']}[/]")
+        elif not verdict["should_block"]:
+            # classifier 判定安全，放行执行，并把理由打出来让用户随时能审计；标签用 ✔ 表示放行
+            print_step("[blue]✔ auto_check[/]", f"[blue dim]放行：{verdict['reason']}[/]")
+            return await handler(args)
+        else:
+            # classifier 判定危险：和人工拒绝一样回填给模型，多带上一句拦截理由；标签用 ✘ 表示拦截
+            print_step("[red]✘ auto_check[/]", f"[red]拦截：{verdict['reason']}[/]")
+            return (
+                f"安全检查拦截了这次 {call.tool_name} 调用，没有执行。拦截理由：{verdict['reason']}。"
+                "不要尝试绕过拦截，请停下来向用户说明情况，由用户决定接下来怎么做。"
+            )
+
+    # default / acceptEdits 模式的 ask，或 auto 模式下 classifier 出错的回退：弹审批让用户决定
     choice = await permissions.prompt_approval(call.tool_name, args)
     if choice == "once":
         return await handler(args)
