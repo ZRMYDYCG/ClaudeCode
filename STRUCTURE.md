@@ -1,13 +1,32 @@
 ├── ClaudeCode
   ├── .agents
     ├── skills
+      ├── async-python-patterns
+        ├── references
+          ├── details.md
+        ├── SKILL.md
+      ├── building-pydantic-ai-agents
+        ├── references
+          ├── AGENTS-CORE.md
+          ├── ARCHITECTURE.md
+          ├── CAPABILITIES-AND-HOOKS.md
+          ├── COMMON-TASKS.md
+          ├── INPUT-AND-HISTORY.md
+          ├── NATIVE-TOOLS.md
+          ├── ON-DEMAND-CAPABILITIES.md
+          ├── ORCHESTRATION-AND-INTEGRATIONS.md
+          ├── TESTING-AND-DEBUGGING.md
+          ├── TOOLS-ADVANCED.md
+          ├── TOOLS-CORE.md
+          ├── WORKSPACES.md
+        ├── SKILL.md
       ├── conventional-commit
         ├── SKILL.md
       ├── domain-modeling
         ├── agents
           ├── openai.yaml
         ├── ADR-FORMAT.md
-        ├── CONTEXT-FORMAT.md
+        ├── GLOSSARY-FORMAT.md
         ├── SKILL.md
       ├── grill-me
         ├── agents
@@ -21,13 +40,46 @@
         ├── agents
           ├── openai.yaml
         ├── SKILL.md
+      ├── pydantic
+        ├── SKILL.md
+      ├── pydantic-ai-harness
+        ├── references
+          ├── CODE-MODE.md
+          ├── CODING-AND-WORKSPACES.md
+          ├── CONTEXT-MANAGEMENT.md
+          ├── CONTROL-AND-SAFETY.md
+          ├── DELEGATION-AND-PLANNING.md
+          ├── HOSTED-INTEGRATIONS.md
+          ├── KNOWLEDGE-AND-MEMORY.md
+          ├── RESEARCH-AND-BROWSING.md
+          ├── RUNTIME-AND-EXTENSION.md
+          ├── TESTING-AND-DEBUGGING.md
+        ├── SKILL.md
+      ├── python-code-style
+        ├── SKILL.md
+      ├── python-testing-patterns
+        ├── references
+          ├── advanced-patterns.md
+          ├── details.md
+        ├── SKILL.md
+      ├── uv-package-manager
+        ├── references
+          ├── advanced-patterns.md
+        ├── SKILL.md
   ├── .claude
     ├── skills
+      ├── async-python-patterns
+      ├── building-pydantic-ai-agents
       ├── conventional-commit
       ├── domain-modeling
       ├── grill-me
       ├── grill-with-docs
       ├── grilling
+      ├── pydantic
+      ├── pydantic-ai-harness
+      ├── python-code-style
+      ├── python-testing-patterns
+      ├── uv-package-manager
   ├── .cursor
     ├── hooks
       ├── format.sh
@@ -39,26 +91,76 @@
       ├── ci.yml
       ├── publish.yml
       ├── update-project-structure.yml
+  ├── agent
+    ├── skills
+      ├── async-python-patterns
+        ├── references
+          ├── details.md
+        ├── SKILL.md
+      ├── building-pydantic-ai-agents
+        ├── references
+          ├── AGENTS-CORE.md
+          ├── ARCHITECTURE.md
+          ├── CAPABILITIES-AND-HOOKS.md
+          ├── COMMON-TASKS.md
+          ├── INPUT-AND-HISTORY.md
+          ├── NATIVE-TOOLS.md
+          ├── ON-DEMAND-CAPABILITIES.md
+          ├── ORCHESTRATION-AND-INTEGRATIONS.md
+          ├── TESTING-AND-DEBUGGING.md
+          ├── TOOLS-ADVANCED.md
+          ├── TOOLS-CORE.md
+        ├── SKILL.md
+      ├── pydantic
+        ├── SKILL.md
+      ├── pydantic-ai-harness
+        ├── references
+          ├── CODE-MODE.md
+        ├── SKILL.md
+      ├── python-code-style
+        ├── SKILL.md
+      ├── python-testing-patterns
+        ├── references
+          ├── advanced-patterns.md
+          ├── details.md
+        ├── SKILL.md
+      ├── uv-package-manager
+        ├── references
+          ├── advanced-patterns.md
+        ├── SKILL.md
   ├── core
     ├── agent
       ├── __init__.py
       ├── core.py
+      ├── file_state.py
       ├── hooks.py
+      ├── reminders.py
       ├── tools.py
     ├── ui
       ├── __init__.py
       ├── commands.py
+      ├── input.py
       ├── render.py
     ├── __init__.py
+    ├── classifier.py
     ├── cli.py
+    ├── mentions.py
+    ├── permissions.py
+    ├── session.py
+  ├── docs
+    ├── zrcoder-banner.jpg
   ├── scripts
     ├── release.sh
   ├── tests
     ├── conftest.py
     ├── test_commands.py
     ├── test_core.py
+    ├── test_file_state.py
     ├── test_hooks.py
     ├── test_main.py
+    ├── test_mentions.py
+    ├── test_reminders.py
+    ├── test_session.py
     ├── test_tools.py
   ├── .env.example
   ├── .gitignore
