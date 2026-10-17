@@ -5,13 +5,13 @@
       "source": "wshobson/agents",
       "sourceType": "github",
       "skillPath": "plugins/python-development/skills/async-python-patterns/SKILL.md",
-      "computedHash": "e0f03523d989848310c93a599541948474f24ccaa04c8d52ed1b45cc5adaebde"
+      "computedHash": "35bc80697c3ba879e32cee7e2728ed2db0d16499875bb718736fd1160fddc2d6"
     },
     "building-pydantic-ai-agents": {
       "source": "pydantic/skills",
       "sourceType": "github",
       "skillPath": "skills/building-pydantic-ai-agents/SKILL.md",
-      "computedHash": "5a588f2859c4998c3299cb7768ffc4207d1c9d762ebc608bc56d1bba47cce3aa"
+      "computedHash": "fca23a3734a865f11786ee59230c0df0dc5c1263bb5945c8cf34e712214de35e"
     },
     "conventional-commit": {
       "source": "github/awesome-copilot",
@@ -23,7 +23,7 @@
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/domain-modeling/SKILL.md",
-      "computedHash": "a11713c0ff7870efa3c331b2e273f09116158485246edc89ae5088eefd1b0b48"
+      "computedHash": "b3eb40152b81f0c98fd2095a023c019452dbdce56f7540cc67fece2972db8369"
     },
     "grill-me": {
       "source": "mattpocock/skills",
@@ -41,7 +41,7 @@
       "source": "mattpocock/skills",
       "sourceType": "github",
       "skillPath": "skills/productivity/grilling/SKILL.md",
-      "computedHash": "4dd886b0196bf43729d954ae326016f2bd9f5f79d892500b407c33a753362f14"
+      "computedHash": "ef1641a2047b71b60f1942cd35efb47d3afc9d584dff5a0b01f8c7db923aaa08"
     },
     "pydantic": {
       "source": "pydantic/skills",
@@ -53,7 +53,7 @@
       "source": "pydantic/skills",
       "sourceType": "github",
       "skillPath": "skills/pydantic-ai-harness/SKILL.md",
-      "computedHash": "24ebd64439b138bb1f7c0fa466d0a64a9d99d36108a670673c9c75c455f9ce8d"
+      "computedHash": "8ff78d94c3f050c17b432ad5d9525160ec3f6cb0f2e263bd82d331890cbc3494"
     },
     "python-code-style": {
       "source": "wshobson/agents",
@@ -65,13 +65,13 @@
       "source": "wshobson/agents",
       "sourceType": "github",
       "skillPath": "plugins/python-development/skills/python-testing-patterns/SKILL.md",
-      "computedHash": "1306eea409e7eff2288d7658806cb508f18339a0ee9a686d324a0fd2570eae55"
+      "computedHash": "a0c0cd2841eb80fc082b360ebbee1ad69275234229e525a6da1baaee3f5a52bd"
     },
     "uv-package-manager": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "skillPath": "plugins/python-development/skills/uv-package-manager/SKILL.md",
-      "computedHash": "c2bf8833d6c3ffa283171ef3b8da90274451605e170077f1ee6529cc38aa6438"
+      "computedHash": "ee0681ca2f64d9e03049fa780dfa0f71a858f8cb2541c3c5f5dc7c83aa41d596"
     }
   }
 }
