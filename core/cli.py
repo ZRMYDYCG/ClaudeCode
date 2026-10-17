@@ -59,7 +59,10 @@ async def run_agent_loop(user_input: str, state: SessionState) -> None:
     """
     api_call_log.clear()
 
-    async with agent.iter(user_input, message_history=state.history) as run:
+    # readFileState 作为 deps 注入：read_file 登记、edit_file / write_file 校验都查这份会话级状态
+    async with agent.iter(
+        user_input, message_history=state.history, deps=state.read_file_state
+    ) as run:
         node = run.next_node
 
         while not isinstance(node, End):

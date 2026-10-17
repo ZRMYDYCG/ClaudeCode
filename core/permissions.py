@@ -32,9 +32,9 @@ MODES = [DEFAULT, ACCEPT_EDITS, AUTO, BYPASS]
 # 只读工具，任何模式都自动放行（读取不会改动系统，放行没风险）
 READONLY_TOOLS = {"read_file"}
 # 编辑文件类工具，acceptEdits 模式下自动放行
-EDIT_TOOLS = {"write_file"}
+EDIT_TOOLS = {"write_file", "edit_file"}
 
-# 工具自检：接收 args，返回 "ask" 表示要求审批，返回 None 表示交给通用规则
+# 工具自检：接收 args，返回 "allow" 表示放行，"ask" 表示要求审批，None 表示交给通用规则
 SelfCheck = Callable[[dict[str, Any]], str | None]
 
 # 工具自检注册表：通用权限规则只认工具名，但危不危险往往取决于参数，只有工具自己最懂参数的语义
@@ -44,7 +44,7 @@ TOOL_SELF_CHECKS: dict[str, SelfCheck] = {}
 def register_self_check(tool_name: str, check: SelfCheck) -> None:
     """
     工具模块调用它挂上自己的自检函数；
-    自检接收 args，返回 "ask" 表示要求审批，返回 None 表示交给通用规则。
+    自检接收 args，返回 "allow" 表示放行，"ask" 表示要求审批，None 表示交给通用规则。
     """
     TOOL_SELF_CHECKS[tool_name] = check
 
@@ -73,10 +73,14 @@ def compute_decision(tool_name: str, args: dict[str, Any]) -> str:
     # bypass 模式：全部放行，连工具自检都不再过问（用户主动选择了这个模式，后果自负）
     if state.mode == BYPASS:
         return "allow"
-    # 工具自检：自检要求审批的调用，会话白名单也盖不过
+    # 工具自检：自检要求审批的调用，会话白名单也盖不过；自检确认安全的直接放行
     check = TOOL_SELF_CHECKS.get(tool_name)
-    if check and check(args) == "ask":
-        return "ask"
+    if check:
+        verdict = check(args)
+        if verdict == "ask":
+            return "ask"
+        if verdict == "allow":
+            return "allow"
     # 本会话点过「不再询问」的工具：放行
     if tool_name in state.session_allowed:
         return "allow"
