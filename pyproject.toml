@@ -55,6 +55,8 @@ module-name = "core"
 [tool.ruff]
 target-version = "py312"
 line-length = 100
+# vendored skills 文档（markdown 里的代码块不由 ruff 管；agent/skills 带斜杠锚定根目录，不会误伤 core/agent）
+extend-exclude = [".agents", "agent/skills"]
 
 [tool.ruff.format]
 quote-style = "double"

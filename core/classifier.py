@@ -4,8 +4,10 @@ auto 模式分类器：发起一次独立的 LLM 请求，判断一次工具调�
 把对话投影成转写（transcript），连同待审查的工具调用一起喂给一个旁路 LLM，
 拿回「放行还是拦截」的裁决。
 """
+
 import json
 import os
+from typing import Any
 
 from openai import AsyncOpenAI
 
@@ -46,7 +48,7 @@ SYSTEM_PROMPT = """你是一个 coding agent 的安全审查员，负责判断�
 """
 
 
-def _shorten(value, limit: int = 200) -> str:
+def _shorten(value: Any, limit: int = 200) -> str:
     """
     截断过长的参数值，免得一次 write_file 的大段内容把转写撑爆。
     """
@@ -54,7 +56,7 @@ def _shorten(value, limit: int = 200) -> str:
     return text if len(text) <= limit else text[:limit] + "...(已截断)"
 
 
-def build_transcript(messages, tool_name: str, args: dict) -> str:
+def build_transcript(messages: Any, tool_name: str, args: dict[str, Any]) -> str:
     """
     把对话历史投影成 classifier 看到的转写。两条规则用来防提示词注入：
 
@@ -74,16 +76,14 @@ def build_transcript(messages, tool_name: str, args: dict) -> str:
                 call_args = {k: _shorten(v) for k, v in part.args_as_dict().items()}
                 lines.append(json.dumps({part.tool_name: call_args}, ensure_ascii=False))
     # 待审查的工具调用附在转写末尾；它在对话历史里已经出现过，先去掉那行避免重复
-    pending = json.dumps(
-        {tool_name: {k: _shorten(v) for k, v in args.items()}}, ensure_ascii=False
-    )
+    pending = json.dumps({tool_name: {k: _shorten(v) for k, v in args.items()}}, ensure_ascii=False)
     if lines and lines[-1] == pending:
         lines.pop()
     lines.append(pending)
     return "\n".join(lines)
 
 
-async def classify(messages, tool_name: str, args: dict) -> dict:
+async def classify(messages: Any, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
     """
     请旁路 LLM 给出裁决，返回 {"should_block": bool, "reason": str}。
 
@@ -102,7 +102,8 @@ async def classify(messages, tool_name: str, args: dict) -> dict:
             # 强制返回 JSON，省去围栏代码块之类的解析麻烦
             response_format={"type": "json_object"},
         )
-        verdict = json.loads(response.choices[0].message.content)
+        # content 可能为 None，兜底成空串让 json.loads 抛错、走 fail-closed 拦截
+        verdict = json.loads(response.choices[0].message.content or "")
         return {
             "should_block": bool(verdict["should_block"]),
             "reason": str(verdict.get("reason", "未给出理由")),
