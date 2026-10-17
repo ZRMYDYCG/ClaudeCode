@@ -1,22 +1,28 @@
 """
 挂在 Agent 上的 hooks：
 1. API 调用元数据记录（/api-detail 命令用）
-2. API 请求失败时的自动重试（wrap_model_request）
-3. 工具调用权限检查（on_tool_execute）
-4. 工具执行异常的兜底处理（on_tool_execute_error）
+2. system-reminder 注入（每次 model 请求前，把过期文件提醒追加进 messages）
+3. API 请求失败时的自动重试（wrap_model_request）
+4. 工具调用权限检查（on_tool_execute）
+5. 工具执行异常的兜底处理（on_tool_execute_error）
 """
 
 from __future__ import annotations
 
 import asyncio
+import dataclasses
 from dataclasses import dataclass, field
 from typing import Any
 
 from pydantic_ai.capabilities import Hooks
 from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UnexpectedModelBehavior
+from pydantic_ai.messages import ModelRequest, UserPromptPart
 
 from core import classifier, permissions
 from core.ui.render import console, print_step
+
+from .file_state import ReadFileState
+from .reminders import build_reminder_text
 
 MAX_RETRIES = 3
 
@@ -84,6 +90,29 @@ async def _record_response(ctx: Any, *, request_context: Any, response: Any) -> 
         call.input_tokens = response.usage.input_tokens
         call.output_tokens = response.usage.output_tokens
     return response
+
+
+# ---------- system-reminder 注入 ----------
+
+
+@hooks.on.before_model_request
+async def _inject_reminders(ctx: Any, request_context: Any) -> Any:
+    """
+    每次 model 请求前，readFileState 里有被外部改过的文件就追加一条 system-reminder；
+    模型重读后 record() 刷新 timestamp，下次 hook 自然不再注入。
+    """
+    state: ReadFileState = ctx.deps
+    text = build_reminder_text(state)
+    if text is None:
+        return request_context
+
+    # 提醒只追加进这一次请求的 messages，不写回对话历史：
+    # 会话文件、回放、下一轮请求都不会带上它，是纯粹发给模型看的临时信息
+    reminder = ModelRequest(parts=[UserPromptPart(content=text)])
+    new_messages = list(request_context.messages) + [reminder]
+    print_step("[dim]◇ system[/]", f"[dim]{text[:200]}[/]")
+    # ModelRequestContext 是 dataclass，官方推荐的修改方式就是 replace 出新实例
+    return dataclasses.replace(request_context, messages=new_messages)
 
 
 # ---------- API 请求重试 ----------

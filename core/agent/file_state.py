@@ -39,3 +39,20 @@ class ReadFileState:
         取出一个文件的登记，从没读过就返回 None。
         """
         return self._state.get(os.path.abspath(path))
+
+    def stale_paths(self) -> list[str]:
+        """
+        返回磁盘 mtime 比登记的读取时间更新的文件的绝对路径——
+        也就是被读取之后又被本进程之外的东西改动过的文件。
+        模型自己的 edit_file / write_file 会通过 record() 刷新 timestamp，
+        所以它自己的改动绝不会算进来。
+        """
+        stale: list[str] = []
+        for path, record in self._state.items():
+            # 文件可能已被删除，getmtime 抛错就跳过，不当成被修改
+            try:
+                if os.path.getmtime(path) > record["timestamp"]:
+                    stale.append(path)
+            except OSError:
+                continue
+        return stale

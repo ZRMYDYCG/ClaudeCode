@@ -1,6 +1,6 @@
-"""core.agent.core：Base URL 规范化。"""
+"""core.agent.core：Base URL 规范化、动态 instructions。"""
 
-from core.agent.core import MODEL_NAME, _normalize_openai_base_url
+from core.agent.core import MODEL_NAME, _normalize_openai_base_url, project_context
 
 
 def test_model_name_from_env() -> None:
@@ -33,3 +33,11 @@ def test_normalize_root_path_after_strip() -> None:
         _normalize_openai_base_url("https://api.example.com/chat/completions")
         == "https://api.example.com/"
     )
+
+
+def test_project_context_contains_env_info() -> None:
+    # 动态 instructions：每次模型请求重新求值，环境信息必须在场
+    text = project_context()
+    assert "工作目录" in text
+    assert "操作系统" in text
+    assert "今天的日期" in text

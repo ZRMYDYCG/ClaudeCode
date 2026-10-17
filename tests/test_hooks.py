@@ -1,22 +1,28 @@
-"""core.agent.hooks：API 调用记录、请求重试、权限检查、工具异常兜底。"""
+"""core.agent.hooks：API 调用记录、system-reminder 注入、请求重试、权限检查、工具异常兜底。"""
 
 import asyncio
+import os
+from dataclasses import dataclass
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UnexpectedModelBehavior
 
 from core import permissions
+from core.agent.file_state import ReadFileState
 from core.agent.hooks import (
     MAX_RETRIES,
     ApiCall,
     _check_permission,
     _handle_tool_error,
+    _inject_reminders,
     _record_request,
     _record_response,
     _retry_on_error,
     api_call_log,
 )
+from core.agent.tools import read_and_register
 
 
 def test_api_call_defaults() -> None:
@@ -150,6 +156,43 @@ def test_retry_on_unexpected_model_behavior(monkeypatch: pytest.MonkeyPatch) -> 
     with pytest.raises(ModelHTTPError):
         asyncio.run(_retry_on_error(None, request_context=object(), handler=handler))
     assert calls["n"] == MAX_RETRIES + 1
+
+
+def test_inject_reminders_appends_stale_notice(tmp_path: Path) -> None:
+    path = tmp_path / "code.txt"
+    path.write_text("alpha", encoding="utf-8")
+    state = ReadFileState()
+    read_and_register(state, str(path))
+    path.write_text("beta", encoding="utf-8")
+    st = path.stat()
+    os.utime(path, (st.st_atime, st.st_mtime + 5))
+
+    @dataclass
+    class FakeRequestContext:
+        messages: list
+
+    request_context = FakeRequestContext(messages=["m1"])
+    returned = asyncio.run(_inject_reminders(SimpleNamespace(deps=state), request_context))
+    assert returned is not request_context
+    assert returned.messages[:-1] == ["m1"]
+    part = returned.messages[-1].parts[0]
+    assert "<system-reminder>" in part.content
+    assert "code.txt" in part.content
+
+
+def test_inject_reminders_skips_when_fresh(tmp_path: Path) -> None:
+    path = tmp_path / "code.txt"
+    path.write_text("alpha", encoding="utf-8")
+    state = ReadFileState()
+    read_and_register(state, str(path))
+
+    @dataclass
+    class FakeRequestContext:
+        messages: list
+
+    request_context = FakeRequestContext(messages=["m1"])
+    returned = asyncio.run(_inject_reminders(SimpleNamespace(deps=state), request_context))
+    assert returned is request_context
 
 
 def test_check_permission_allow_runs_handler(monkeypatch: pytest.MonkeyPatch) -> None:
