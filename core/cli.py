@@ -10,8 +10,10 @@ from typing import Any, Literal
 
 from pydantic_ai import Agent
 from pydantic_graph import End
+from rich.markup import escape
 
 from core.agent import MODEL_NAME, agent, api_call_log
+from core.mentions import build_mention_messages, extract_at_mentions
 from core.session import append_messages, new_session_id
 from core.ui.commands import COMMANDS, SessionState, print_part
 from core.ui.input import Repl
@@ -51,6 +53,26 @@ def apply_result(state: SessionState, result: Any) -> None:
     state.output_tokens += usage.output_tokens
     state.last_api_calls = list(api_call_log)
     append_messages(state.session_id, result.new_messages())
+
+
+def inject_at_mentions(user_input: str, state: SessionState) -> None:
+    """
+    解析用户输入里的 @path，把每个被引用的文件伪装成一次 read_file 调用，
+    在 Agent 跑起来之前塞进对话历史。
+    """
+    paths = extract_at_mentions(user_input)
+    if not paths:
+        return
+    mention_messages = build_mention_messages(paths, state.read_file_state)
+    if not mention_messages:
+        return
+    # 塞进历史：这一轮模型就能看到这些「读过的文件」，且 readFileState 已登记，
+    # edit 的先读后写校验直接通过
+    state.history.extend(mention_messages)
+    # 无效的 @ 引用（不存在、是目录）会被静默跳过，汇报只列真正注入了的
+    injected = [m.parts[0].args_as_dict()["path"] for m in mention_messages[::2]]
+    names = escape(", ".join(injected))
+    console.print(f"[magenta]⏺ mention[/] [magenta dim]已注入 {len(injected)} 个文件：{names}[/]")
 
 
 async def run_agent_loop(user_input: str, state: SessionState) -> None:
@@ -102,6 +124,9 @@ async def async_main() -> None:
             return
         if action == "continue":
             return
+
+        # 解析 @ 引用，把被引用的文件伪装成 read_file 调用塞进历史
+        inject_at_mentions(user_input, state)
 
         # 核心 Agent 循环：开请求时显示 working...，结束 / 被打断后由 Repl 统一隐藏；
         # 中途按 ESC / Ctrl+C 会打断

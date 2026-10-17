@@ -9,7 +9,7 @@ import pytest
 from pydantic_ai.exceptions import ModelRetry
 
 from core.agent.file_state import ReadFileState
-from core.agent.tools import edit_file, read_file, run_command, write_file
+from core.agent.tools import edit_file, read_and_register, read_file, run_command, write_file
 
 
 def _ctx() -> SimpleNamespace:
@@ -79,6 +79,54 @@ def test_read_file_binary_returns_error(tmp_path: Path) -> None:
     path = tmp_path / "bin.dat"
     path.write_bytes(b"\xff\xfe\x00\x01")
     assert "不是文本文件" in read_file(_ctx(), str(path))
+
+
+def test_read_and_register_records_range(tmp_path: Path) -> None:
+    path = tmp_path / "code.txt"
+    path.write_text("one\ntwo", encoding="utf-8")
+    state = ReadFileState()
+    assert read_and_register(state, str(path)) == "1\tone\n2\ttwo"
+    record = state.get(str(path))
+    assert record is not None
+    assert record["content"] == "one\ntwo"
+    assert record["offset"] == 1
+    assert record["limit"] is None
+
+
+def test_read_file_dedups_unchanged_file(tmp_path: Path) -> None:
+    path = tmp_path / "code.txt"
+    path.write_text("alpha", encoding="utf-8")
+    ctx = _ctx()
+    assert read_file(ctx, str(path)) == "1\talpha"
+    assert "不必重复读取" in read_file(ctx, str(path))
+
+
+def test_read_file_rereads_after_change(tmp_path: Path) -> None:
+    path = tmp_path / "code.txt"
+    path.write_text("alpha", encoding="utf-8")
+    ctx = _ctx()
+    read_file(ctx, str(path))
+    path.write_text("beta\ngamma", encoding="utf-8")
+    st = path.stat()
+    os.utime(path, (st.st_atime, st.st_mtime + 5))
+    assert read_file(ctx, str(path)) == "1\tbeta\n2\tgamma"
+
+
+def test_read_file_different_range_skips_dedup(tmp_path: Path) -> None:
+    path = tmp_path / "code.txt"
+    path.write_text("one\ntwo\nthree", encoding="utf-8")
+    ctx = _ctx()
+    read_file(ctx, str(path), limit=1)
+    assert "2\ttwo" in read_file(ctx, str(path))
+
+
+def test_read_file_dedup_skips_after_edit(tmp_path: Path) -> None:
+    path = tmp_path / "code.txt"
+    path.write_text("alpha\nbeta", encoding="utf-8")
+    ctx = _ctx()
+    read_file(ctx, str(path))
+    edit_file(ctx, str(path), "beta", "GAMMA")
+    assert read_file(ctx, str(path)) == "1\talpha\n2\tGAMMA"
 
 
 def test_edit_file_requires_read_first(tmp_path: Path) -> None:

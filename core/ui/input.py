@@ -1,24 +1,35 @@
 from __future__ import annotations
 
 import asyncio
+import re
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Iterable
+from typing import Any
 
 from prompt_toolkit.application import Application
 from prompt_toolkit.buffer import Buffer
+from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.key_binding.key_processor import KeyPressEvent
-from prompt_toolkit.layout.containers import ConditionalContainer, HSplit, Window
+from prompt_toolkit.layout.containers import (
+    ConditionalContainer,
+    Float,
+    FloatContainer,
+    HSplit,
+    Window,
+)
 from prompt_toolkit.layout.controls import BufferControl, FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension
 from prompt_toolkit.layout.layout import Layout
+from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.patch_stdout import patch_stdout
 from rich.markup import escape
 
 from core import permissions
+from core.mentions import list_candidate_files
 
 from .commands import SessionState
 from .render import console
@@ -28,6 +39,24 @@ from .render import console
 
 # working 指示器的转圈动画帧
 _SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+
+
+class AtFileCompleter(Completer):
+    """
+    @ 引用补全：用户正在输入 @token 时，把匹配的文件列成下拉候选。
+    """
+
+    def get_completions(self, document: Any, complete_event: Any) -> Iterable[Completion]:
+        # 只看光标前的文本，匹配正在输入的那个 @token（@ 到光标之间的非空白串）
+        match = re.search(r"@(\S*)$", document.text_before_cursor)
+        if match is None:
+            return
+        token = match.group(1).lower()
+        for path in list_candidate_files():
+            # 简单的子串模糊匹配：token 是路径的子串就算命中，不区分大小写
+            if token in path.lower():
+                # start_position 取负的 token 长度，选中后用完整路径替换掉已经敲进去的那部分
+                yield Completion(path, start_position=-len(match.group(1)))
 
 
 class Repl:
@@ -43,7 +72,13 @@ class Repl:
         self.working = False
         self._work_start = 0.0
         self._frame = 0
-        self._buffer = Buffer(multiline=False, history=InMemoryHistory())
+        # 给输入缓冲区挂上 @ 文件补全器，complete_while_typing 让候选随敲随出，不用按 Tab
+        self._buffer = Buffer(
+            multiline=False,
+            history=InMemoryHistory(),
+            completer=AtFileCompleter(),
+            complete_while_typing=True,
+        )
         self.app = self._build_app()
 
     def _prompt_prefix(self, line_number: int, wrap_count: int) -> HTML:
@@ -72,25 +107,36 @@ class Repl:
 
     def _build_app(self) -> Application[None]:
         # 从上到下：working 指示器、分割线、输入行、分割线、模式行
+        body = HSplit(
+            [
+                ConditionalContainer(
+                    Window(FormattedTextControl(self._working_line), height=1),
+                    filter=Condition(lambda: self.working),
+                ),
+                self._divider(),
+                # 输入行只占内容高度，多行自动换行撑开
+                Window(
+                    BufferControl(buffer=self._buffer),
+                    get_line_prefix=self._prompt_prefix,
+                    height=Dimension(min=1),
+                    wrap_lines=True,
+                    dont_extend_height=True,
+                ),
+                self._divider(),
+                Window(FormattedTextControl(self._mode_line), height=1),
+            ]
+        )
+        # 用 FloatContainer 托起输入区，再叠一层补全菜单浮层，菜单跟着光标位置浮现
         layout = Layout(
-            HSplit(
-                [
-                    ConditionalContainer(
-                        Window(FormattedTextControl(self._working_line), height=1),
-                        filter=Condition(lambda: self.working),
+            FloatContainer(
+                content=body,
+                floats=[
+                    Float(
+                        xcursor=True,
+                        ycursor=True,
+                        content=CompletionsMenu(max_height=8, scroll_offset=1),
                     ),
-                    self._divider(),
-                    # 输入行只占内容高度，多行自动换行撑开
-                    Window(
-                        BufferControl(buffer=self._buffer),
-                        get_line_prefix=self._prompt_prefix,
-                        height=Dimension(min=1),
-                        wrap_lines=True,
-                        dont_extend_height=True,
-                    ),
-                    self._divider(),
-                    Window(FormattedTextControl(self._mode_line), height=1),
-                ]
+                ],
             )
         )
         return Application(layout=layout, key_bindings=self._build_key_bindings())
@@ -132,6 +178,10 @@ class Repl:
         return kb
 
     def _on_enter(self) -> None:
+        # 补全菜单正开着且有高亮项时，回车先采纳补全，不提交输入
+        if self._buffer.complete_state and self._buffer.complete_state.current_completion:
+            self._buffer.apply_completion(self._buffer.complete_state.current_completion)
+            return
         # 请求中不接受新提交（输入框仍在，只是回车不触发新一轮）
         if self._task is not None:
             return

@@ -11,11 +11,20 @@ from typing import Any
 
 from openai import AsyncOpenAI
 
-# classifier 和主循环用同一个模型、同一个 API Key，但请求是独立发起的，不经过 agent 框架
-_client = AsyncOpenAI(
-    api_key=os.environ.get("API_KEY"),
-    base_url="https://api.deepseek.com",
-)
+# classifier 和主循环用同一个 API Key，但请求是独立发起的，不经过 agent 框架。
+# client 懒创建：.env 由 load_dotenv 在 core.py 里加载，import 阶段 API_KEY 可能还没进环境变量
+_client: AsyncOpenAI | None = None
+
+
+def _get_client() -> AsyncOpenAI:
+    global _client
+    if _client is None:
+        _client = AsyncOpenAI(
+            api_key=os.environ.get("API_KEY"),
+            base_url="https://api.deepseek.com",
+        )
+    return _client
+
 
 CLASSIFIER_MODEL = "deepseek-flash"
 
@@ -91,7 +100,7 @@ async def classify(messages: Any, tool_name: str, args: dict[str, Any]) -> dict[
     """
     transcript = build_transcript(messages, tool_name, args)
     try:
-        response = await _client.chat.completions.create(
+        response = await _get_client().chat.completions.create(
             model=CLASSIFIER_MODEL,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},

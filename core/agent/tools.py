@@ -40,31 +40,17 @@ def _with_line_numbers(content: str, start_line: int = 1) -> str:
     return "\n".join(f"{i:>{width}}\t{line}" for i, line in enumerate(lines, start_line))
 
 
-def read_file(
-    ctx: RunContext[ReadFileState], path: str, offset: int = 1, limit: int | None = None
+def read_and_register(
+    state: ReadFileState, path: str, offset: int = 1, limit: int | None = None
 ) -> str:
     """
-    读取文件内容，输出带行号（类似 cat -n 格式）。
-    大文件请用 offset 和 limit 分段读取，不必一次读完。
-    后续用 edit_file 编辑时，old_string 和 new_string 里不要包含行号前缀。
-
-    Args:
-        path: 要读取的文件的绝对路径
-        offset: 从第几行开始读，从 1 算起（默认 1 = 文件开头）
-        limit: 读多少行；不传则最多读 DEFAULT_MAX_LINES 行
+    读取文件、按 offset/limit 切片、登记进 readFileState，返回带行号的内容。
+    read_file 工具和 @ 引用注入都调用它，所以经 @ 引入的文件和模型自己读的文件，
+    在 readFileState 里长得一模一样。
     """
-    # 1. 读取文件：能靠换参数纠正的错误抛 ModelRetry 让模型重试
-    try:
-        with open(path, encoding="utf-8") as f:
-            content = f.read()
-    except FileNotFoundError as e:
-        raise ModelRetry(f"文件 {path} 不存在，请确认路径或换一个文件") from e
-    except PermissionError as e:
-        raise ModelRetry(f"没有权限读取 {path}，请换一个可读的文件") from e
-    except IsADirectoryError as e:
-        raise ModelRetry(f"{path} 是一个目录，请指定目录下的具体文件") from e
-    except UnicodeDecodeError:
-        return f"错误：{path} 不是文本文件，无法读取"
+    # 1. 读取文件全文
+    with open(path, encoding="utf-8") as f:
+        content = f.read()
 
     # 2. 按 offset/limit 切片：不指定 limit 时最多取 DEFAULT_MAX_LINES 行
     all_lines = content.splitlines()
@@ -78,15 +64,53 @@ def read_file(
     truncated = limit is None and end < total
 
     # 3. 登记进会话的 readFileState：存切片后的原始内容（不带行号）和此刻的 mtime
-    ctx.deps.record(path, selected_content, offset=offset, limit=limit)
+    state.record(path, selected_content, offset=offset, limit=limit)
 
-    # 4. 返回给模型的是带行号的版本；如果被截断，末尾附提示
+    # 4. 返回带行号的版本；如果被截断，末尾附提示
     result = _with_line_numbers(selected_content, start_line=offset)
     if truncated:
         result += (
             f"\n\n（文件共 {total} 行，还有 {total - end} 行未显示。用 offset={end + 1} 继续读取）"
         )
     return result
+
+
+def read_file(
+    ctx: RunContext[ReadFileState], path: str, offset: int = 1, limit: int | None = None
+) -> str:
+    """
+    读取文件内容，输出带行号（类似 cat -n 格式）。
+    大文件请用 offset 和 limit 分段读取，不必一次读完。
+    后续用 edit_file 编辑时，old_string 和 new_string 里不要包含行号前缀。
+
+    Args:
+        path: 要读取的文件的绝对路径
+        offset: 从第几行开始读，从 1 算起（默认 1 = 文件开头）
+        limit: 读多少行；不传则最多读 DEFAULT_MAX_LINES 行
+    """
+    # 1. 去重：readFileState 里有记录、来自 read_file（offset 非 None）、同范围、同 mtime → 跳过。
+    #    重复读一个没变的文件纯属浪费 token，模型参考上次的读取结果即可。
+    #    edit_file / write_file 刷新的登记没有 offset（None），在这里天然跳过去重，保证改完能重读
+    record = ctx.deps.get(path)
+    if record is not None and record.get("offset") is not None:
+        if record["offset"] == offset and record["limit"] == limit:
+            try:
+                if os.path.getmtime(path) <= record["timestamp"]:
+                    return "文件内容没有变化，请参考上次 read_file 的结果，不必重复读取"
+            except FileNotFoundError:
+                pass
+
+    # 2. 读取 + 登记都交给 read_and_register，异常在这里转成 ModelRetry 反馈给模型
+    try:
+        return read_and_register(ctx.deps, path, offset, limit)
+    except FileNotFoundError as e:
+        raise ModelRetry(f"文件 {path} 不存在，请确认路径或换一个文件") from e
+    except PermissionError as e:
+        raise ModelRetry(f"没有权限读取 {path}，请换一个可读的文件") from e
+    except IsADirectoryError as e:
+        raise ModelRetry(f"{path} 是一个目录，请指定目录下的具体文件") from e
+    except UnicodeDecodeError:
+        return f"错误：{path} 不是文本文件，无法读取"
 
 
 def edit_file(
