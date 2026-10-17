@@ -1,13 +1,13 @@
 """
 auto 模式分类器：发起一次独立的 LLM 请求，判断一次工具调用是否可以自动放行。
 
-把对话投影成转写（transcript），连同待审查的工具调用一起喂给一个旁路 LLM，拿回「放行还是拦截」的裁决。
+把对话投影成转写（transcript），连同待审查的工具调用一起喂给一个旁路 LLM，
+拿回「放行还是拦截」的裁决。
 """
 import json
 import os
 
 from openai import AsyncOpenAI
-
 
 # classifier 和主循环用同一个模型、同一个 API Key，但请求是独立发起的，不经过 agent 框架
 _client = AsyncOpenAI(
@@ -59,7 +59,8 @@ def build_transcript(messages, tool_name: str, args: dict) -> str:
     把对话历史投影成 classifier 看到的转写。两条规则用来防提示词注入：
 
     1. 只保留用户的原话和 agent 发起的工具调用，丢弃模型自己写的文本和所有工具输出。
-       恶意文件内容是从工具输出混进历史的，模型的文本可能已经被它带偏，这两样都不能拿去游说 classifier。
+       恶意文件内容是从工具输出混进历史的，模型的文本可能已经被它带偏，
+       这两样都不能拿去游说 classifier。
     2. 每行用 json.dumps 序列化，参数里的恶意内容会被转义成字符串，伪造不出一行 {"user": ...}。
     """
     lines = []
